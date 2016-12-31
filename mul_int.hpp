@@ -12,20 +12,13 @@
 #include <iomanip>
 #include <cassert>
 
-#define BOUND_CHECK true
-
 #if BOUND_CHECK
   #define ACC(n) digits.at(n)
 #else
   #define ACC(n) digits[n]
 #endif
 
-#undef BOUND_CHECK
-
 namespace l2lib{
-  class mul_int;
-  mul_int pow(const mul_int&, const mul_int&);
-  mul_int abs(const mul_int&);
   class mul_int{ // multiprecision integer
   public:
     using self = mul_int;
@@ -66,7 +59,6 @@ namespace l2lib{
         dig_t buf = ctoi(*it);
         digits.push_back(buf);
       }
-
     }
 
     mul_int(num_t i):digits(),sgn(i<0) {
@@ -79,9 +71,8 @@ namespace l2lib{
     }
 
     mul_int(const self& n):digits(n.digits),sgn(n.sgn){}
-
     mul_int(const dig_vec& vec):digits(vec),sgn(false){}
-
+    
     inline size_t size() const {
       // return size of number (number of digits)
       // not always same as 'real' size (size of vector digits)
@@ -518,11 +509,25 @@ namespace l2lib{
     return ret;
   }
 
-  inline bool is_prime(const mul_int& n){
-    if(n < 2) return false;
+  bool is_prime(const mul_int& n){
+    if(n <  2) return false;
     if(n == 2) return true;
+    if(n == 3) return true;
+    // guaranteed n > 3
+
     if(n%2 == 0) return false;
-    for(mul_int i=3; i*i<=n; i+=2) if(n%i == 0) return false;
+    if(n%3 == 0) return false;
+    // guaranteed n is not divisible with 6
+
+    const auto res = n%6;
+    if(res != 1 && res != 5) return false;
+
+    // 6の倍数前後の数を使って試し割りをする
+    for(mul_int i=5;i*i<=n;i+=6){
+      if(n%i     == 0) return false;
+      if(n%(i+2) == 0) return false;
+    }
+
     return true;
   }
 

@@ -2,12 +2,6 @@
 #include <complex>
 #include <vector>
 
-#define MYLIB_DFT_FFTW_ENABLE true
-
-#if MYLIB_DFT_FFTW_ENABLE
-#include <fftw3.h>
-#endif
-
 namespace l2lib{
   constexpr long double pi = 3.141592653589793238462643383279502884197169399375105820974944592307816406286L;
   using real_t = long double;
@@ -42,7 +36,7 @@ namespace l2lib{
     return v;
   }
 
-  #if MYLIB_DFT_FFTW_ENABLE
+  #if L2LIB_DFT_FFTW_ENABLE
   data_vector dft_fftw(const data_vector& v){
     if(v.size() == 0) return {};
     const auto n = v.size();
