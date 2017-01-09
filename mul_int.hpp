@@ -5,9 +5,6 @@
 #include <algorithm>
 #include <type_traits>
 #include <sstream>
-
-//#include "dft.hpp"
-
 #include <iostream>
 #include <iomanip>
 #include <cassert>
@@ -170,7 +167,7 @@ namespace l2lib{
         shift_up_digits(shift_num);
       }
       else if(rhs.abs_is_ten_multiple()) shift_up_digits(rhs.zero_suppress());
-      else karatsuba_multiply(rhs);
+      else long_multiply(rhs);
 
       set_sgn(sgn_dif);
 
@@ -296,38 +293,6 @@ namespace l2lib{
       return ((real_size() <= i) ? 0 : digits[i]);
     }
 
-    /*
-    self dft_mul(const self& rhs) const {
-      const auto max = size()+rhs.size();
-
-      std::vector<std::complex<long double>> a_dat;
-      std::vector<std::complex<long double>> b_dat;
-
-      for(size_t i=0; i<max; ++i){
-        a_dat.push_back(get_digit(i));
-        b_dat.push_back(rhs.get_digit(i));
-      }
-
-      a_dat = dft(a_dat);
-      b_dat = dft(b_dat);
-
-      std::transform(a_dat.begin(),a_dat.end(),b_dat.begin(),a_dat.begin(),std::multiplies<std::complex<long double>>());
-
-      a_dat = idft(a_dat);
-
-      self ret("");
-      unsigned buf,carry = 0; // buf may contain larger value than max of dig_t
-      for(const auto& v : a_dat){
-        buf = carry+static_cast<unsigned>(v.real()+0.5L); // '0.5L' は四捨五入のため
-        carry = buf/10;
-        // guaranteed buf < 10  <=> containable with 8bit
-        ret.digits.push_back(static_cast<dig_t>(buf%10));
-      }
-      if(!ret.is_zero() && (is_minus() != rhs.is_minus())) ret.flip_sgn();
-      return ret;
-    }
-    */
-
   private:
     inline bool is_zero() const { return equal_to_one_dig(0); }
     inline bool abs_is_one() const { return equal_to_one_dig(1); }
@@ -364,23 +329,6 @@ namespace l2lib{
       }
       *this = buf;
       return *this;
-    }
-
-    void karatsuba_multiply(const self& rhs){
-      constexpr size_t div_num = 20;
-      if(size() <= div_num && rhs.size() <= div_num) long_multiply(rhs);
-      else{
-        auto this_div = karatsuba_divide(div_num);
-        auto rhs_div = rhs.karatsuba_divide(div_num);
-        auto z0 = this_div.first*rhs_div.first;
-        auto z2 = this_div.second*rhs_div.second;
-        auto z1 = (this_div.first+this_div.second)*(rhs_div.first+rhs_div.second)-z0-z2;
-        *this = z0 + z1.shift_up_digits(div_num) + z2.shift_up_digits(2*div_num);
-      }
-    }
-
-    std::pair<self,self> karatsuba_divide(size_t div) const {
-      return {slice(0,div-1),slice(div,zero_suppress())};
     }
 
     self& shift_up_digits(const size_t n){
