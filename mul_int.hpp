@@ -26,8 +26,6 @@ namespace l2lib{
     using dig_vec = std::vector<dig_t>;
     using num_t = long long;
 
-    static bool zero_suppression;
-
   private:
     dig_vec digits;
     bool sgn; // true when the number is negative
@@ -72,24 +70,12 @@ namespace l2lib{
 
     mul_int(const self& n):digits(n.digits),sgn(n.sgn){}
     mul_int(const dig_vec& vec):digits(vec),sgn(false){}
-    
+
     inline size_t size() const {
       // return size of number (number of digits)
       // not always same as 'real' size (size of vector digits)
       return zero_suppress()+1;
     }
-
-    inline bool is_zero() const { return equal_to_one_dig(0); }
-    inline bool abs_is_one() const { return equal_to_one_dig(1); }
-    inline bool abs_is_ten_multiple() const { // check if number is in form of 100...(any number of 0)...000
-      return get_digit(zero_suppress())==1 && 
-          std::all_of(digits.begin(),digits.begin()+zero_suppress(),[](auto i){return i==0;});
-    }
-
-    // return if *this equals to n
-    inline bool equal_to_one_dig(dig_t n) const { return (size() == 1) && (digits[0] == n); }
-
-    inline bool is_minus() const { return sgn; }
 
     self& operator=(const self& rhs){
       digits = rhs.digits;
@@ -286,6 +272,7 @@ namespace l2lib{
     } \
     \
 
+    // TODO: optimize for 0
     REL_OP(==,(lhs.is_minus() == rhs.is_minus()) && lhs.abs_equal(rhs))
     REL_OP(<,(lhs.is_minus() && !rhs.is_minus()) || ((lhs.is_minus() == rhs.is_minus()) && lhs.abs_lessthan(rhs)))
     REL_OP(>,(rhs<lhs))
@@ -295,31 +282,14 @@ namespace l2lib{
 
     #undef REL_OP
 
-    inline std::size_t zero_suppress() const {
-      auto top = real_size()-1;
-      if(top != 0){ // if digits of number != 0
-        for(;get_digit(top) == 0 && top > 0; --top);
-      }
-      return top;
-    }
-
     std::string to_string() const {
       std::ostringstream oss;
       if(is_minus()) oss << '-';
-      auto top = (self::zero_suppression?size():real_size());
+      auto top = size();
       for(auto i = top; i > 0; --i){
         oss << static_cast<unsigned>(get_digit(i-1));
       }
       return oss.str();
-    }
-
-    template<typename RetType = num_t, typename BiOp>
-    RetType reduce_digits(BiOp f) const {
-      RetType ret = get_digit(0);
-      for(size_t i=1; i<size(); ++i){
-        ret = f(ret,get_digit(i));
-      }
-      return ret;
     }
 
     inline dig_t get_digit(size_t i) const { // zero-oriented
@@ -359,11 +329,31 @@ namespace l2lib{
     */
 
   private:
+    inline bool is_zero() const { return equal_to_one_dig(0); }
+    inline bool abs_is_one() const { return equal_to_one_dig(1); }
+    inline bool abs_is_ten_multiple() const { // check if number is in form of 100...(any number of 0)...000
+      return get_digit(zero_suppress())==1 && 
+          std::all_of(digits.begin(),digits.begin()+zero_suppress(),[](auto i){return i==0;});
+    }
+
+    // return if *this equals to n
+    inline bool equal_to_one_dig(dig_t n) const { return (size() == 1) && (digits[0] == n); }
+
+    inline bool is_minus() const { return sgn; }
+
     inline bool is_even() const {return (digits[0]%2 == 0);}
     inline size_t real_size() const {return digits.size();}
 
     inline void flip_sgn(){set_sgn(!sgn);}
     inline void set_sgn(bool sgn_arg){if(!is_zero()) sgn = sgn_arg;}
+
+    inline std::size_t zero_suppress() const {
+      auto top = real_size()-1;
+      if(top != 0){ // if digits of number != 0
+        for(;get_digit(top) == 0 && top > 0; --top);
+      }
+      return top;
+    }
 
     self& long_multiply(const self& rhs){
       self buf;
@@ -484,14 +474,12 @@ namespace l2lib{
     }
   };
 
-  bool mul_int::zero_suppression = true;
-
   mul_int abs(const mul_int& n){
-    return (n.is_minus() ? -n : n);
+    return (n < 0 ? -n : n);
   }
 
   mul_int pow(const mul_int& base, const mul_int& exp){
-    if(exp.is_zero()) return 1;
+    if(exp == 0) return 1;
     if(exp == 1) return base;
 
     auto ret = base;
