@@ -1,5 +1,5 @@
 #pragma once
-#include <algorithm> //std::min
+#include <algorithm> // std::min
 #include <cmath>     // std::pow
 #include <iomanip>   // std::setw,setprecision
 #include <iostream>  // std::clog
@@ -19,9 +19,9 @@ namespace l2lib{
       std::ostringstream oss;
 
       /* draw progress bar */
+      oss << "\r[";
+
       const unsigned tics = static_cast<unsigned>((static_cast<double>(count)/max)*width);
-      oss << '\r';
-      oss << '[';
       if(tics != 0){
         for(unsigned i = tics-1; i; --i){
           oss << '=';
@@ -33,27 +33,21 @@ namespace l2lib{
           oss << ' ';
         }
       }
-      oss << "] ";
+
+      oss << "] [";
 
       /* draw progress in percentage */
       // `precision` > 0 : increased digits after decimal point
       // `precision` <= 0: print just before decimal point
       // if `precision` is negative, screen updating will happen less
+      next_show_count = std::min({
+          static_cast<big_uint>(static_cast<double>(tics+1)/width*max),                // when tics changes
+          static_cast<big_uint>(count+max/(precision>0?std::pow(10,2+precision):100)), // when percentage changes
+          max-1                                                                        // before the max
+      });
 
-      big_uint next_tic_count = static_cast<big_uint>(static_cast<double>(tics+1)/width*max);
-      big_uint next_ratio_count;
-
-      if(precision > 0){
-        oss << '['
-            << std::fixed << std::setw(static_cast<int>(4+precision)) << std::setprecision(static_cast<int>(precision))
-            << count*(100.0/max) << "%]";
-        next_ratio_count = static_cast<big_uint>(count+max/std::pow(10,2+precision));
-      }
-      else{
-        oss << '[' << std::fixed << std::setw(3) << std::setprecision(0) << count*(100.0/max) << "%]";
-        next_ratio_count = static_cast<big_uint>(count+max/100);
-      }
-      next_show_count = std::min({next_tic_count,next_ratio_count,max-1});
+      oss << std::fixed << std::setw(precision>0?4+precision:3) << std::setprecision(precision>0?precision:0)
+          << count*(100.0/max) << "%]";
 
       // actual flushing of buffer will happen only when either progress in percentage or tics changes
       // `next_show_count` is capped with `max` to ensure last value is 100%
