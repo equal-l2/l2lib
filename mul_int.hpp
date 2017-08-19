@@ -8,6 +8,7 @@
 #include <iostream>
 #include <iomanip>
 #include <cassert>
+#include <climits>
 
 #if BOUND_CHECK
   #define ACC(n) digits.at(n)
@@ -22,6 +23,7 @@ namespace l2lib{
     using dig_t = uint_fast8_t;
     using dig_vec = std::vector<dig_t>;
     using num_t = long long;
+    constexpr static size_t digit_bit = sizeof(dig_t)*CHAR_BIT;
 
   private:
     dig_vec digits;
